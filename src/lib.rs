@@ -101,9 +101,19 @@ pub fn amibsonic_shutdown_system(mut ambisonic_res: NonSendMut<AmbisonicResource
 pub fn ambisonic_update_system(
     sources: Res<Assets<AmbisonicSource>>,
     scene: NonSend<AmbisonicResource>,
-    mut query: Query<(&Transform, &mut AmbisonicController, Option<&Velocity>)>,
+    mut query: QuerySet<(
+        Query<(&GlobalTransform, &mut AmbisonicController, Option<&Velocity>)>,
+        Query<&GlobalTransform, With<AmbisonicCenter>>
+    )>,
 ) {
-    for (transform, mut controller, velocity) in query.iter_mut() {
+    let center = match query.q1().single() {
+        Ok(center) => center.clone(),
+        _ => GlobalTransform::from_xyz(0.0, 0.0, 0.0),
+    };
+    for (transform, mut controller, velocity) in query.q0_mut().iter_mut() {
+        let matrix = transform.compute_matrix();
+        let final_matrix = matrix * center.compute_matrix();
+        let transform = GlobalTransform::from_matrix(final_matrix);
         if let Some(ref mut controller) = controller.controller {
             controller.adjust_position([
                 transform.translation[0],
@@ -137,6 +147,8 @@ pub struct AmbisonicBundle {
     pub transform: Transform,
     pub controller: AmbisonicController,
 }
+
+pub struct AmbisonicCenter;
 
 pub struct AmbisonicPlugin;
 impl Plugin for AmbisonicPlugin {

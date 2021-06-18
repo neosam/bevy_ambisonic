@@ -11,7 +11,8 @@ fn startup_system(
             transform: Transform::from_xyz(-50.0, 0.0, 0.0),
             controller: bevy_ambisonic::AmbisonicController::new(handle),
         })
-        .insert(bevy_ambisonic::Velocity(Vec3::new(20.0, 0.0, 5.0)));
+        .insert(bevy_ambisonic::Velocity(Vec3::new(20.0, 0.0, 5.0)))
+        .insert(GlobalTransform::default());
 }
 
 fn update_system(mut query: Query<(&mut Transform, &Velocity)>, time: Res<Time>) {

@@ -6,11 +6,11 @@ struct Marker;
 
 fn startup_system(
     mut commands: Commands,
-    mut sources: ResMut<Assets<bevy_ambisonic::AmbisonicSource>>,
+    mut sources: ResMut<Assets<bevy_ambisonic::AmbisonicSample>>,
     texture_asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    let handle = sources.add(bevy_ambisonic::AmbisonicSource::new_size(440, true));
+    let handle = sources.add(bevy_ambisonic::AmbisonicSample::new_size(440, true));
     let mut camera_bundle = OrthographicCameraBundle::new_2d();
     camera_bundle.orthographic_projection.scaling_mode = ScalingMode::FixedHorizontal;
     camera_bundle.orthographic_projection.scale = 2.0;
@@ -19,7 +19,7 @@ fn startup_system(
     let sound = commands
         .spawn_bundle(bevy_ambisonic::AmbisonicBundle {
             transform: Transform::from_xyz(0.0, 0.0, 0.0),
-            controller: bevy_ambisonic::AmbisonicController::new(handle),
+            controller: bevy_ambisonic::AmbisonicSource::new(handle),
         })
         .insert(GlobalTransform::default())
         .id();

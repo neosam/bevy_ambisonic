@@ -3,13 +3,13 @@ use bevy_ambisonic::Velocity;
 
 fn startup_system(
     mut commands: Commands,
-    mut sources: ResMut<Assets<bevy_ambisonic::AmbisonicSource>>,
+    mut sources: ResMut<Assets<bevy_ambisonic::AmbisonicSample>>,
 ) {
-    let handle = sources.add(bevy_ambisonic::AmbisonicSource::new_size(440, true));
+    let handle = sources.add(bevy_ambisonic::AmbisonicSample::new_size(440, true));
     commands
         .spawn_bundle(bevy_ambisonic::AmbisonicBundle {
             transform: Transform::from_xyz(-50.0, 0.0, 0.0),
-            controller: bevy_ambisonic::AmbisonicController::new(handle),
+            controller: bevy_ambisonic::AmbisonicSource::new(handle),
         })
         .insert(bevy_ambisonic::Velocity(Vec3::new(20.0, 0.0, 5.0)))
         .insert(GlobalTransform::default());

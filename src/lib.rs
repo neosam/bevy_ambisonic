@@ -6,7 +6,7 @@ use bevy::reflect::TypeUuid;
 
 #[derive(Clone, TypeUuid)]
 #[uuid = "7cb323df-ef1e-47ef-b64a-d0996c631894"]
-pub struct AmbisonicSource {
+pub struct AmbisonicSample {
     data: Arc<[f32]>,
     current_frame_len: Option<usize>,
     sample_rate: u32,
@@ -14,7 +14,7 @@ pub struct AmbisonicSource {
     repeat: bool,
     current_index: usize,
 }
-impl ambisonic::rodio::Source for AmbisonicSource {
+impl ambisonic::rodio::Source for AmbisonicSample {
     fn current_frame_len(&self) -> Option<usize> {
         self.current_frame_len
     }
@@ -31,7 +31,7 @@ impl ambisonic::rodio::Source for AmbisonicSource {
         self.total_duration
     }
 }
-impl Iterator for AmbisonicSource {
+impl Iterator for AmbisonicSample {
     type Item = f32;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -47,14 +47,14 @@ impl Iterator for AmbisonicSource {
         }
     }
 }
-impl AmbisonicSource {
+impl AmbisonicSample {
     pub fn from_source<T: source::Source<Item = f32>>(source: T, repeat: bool) -> Self {
         let current_frame_len = source.current_frame_len();
         let sample_rate = source.sample_rate();
         let total_duration = source.total_duration();
         let current_index = 0;
         let data = (0u16..u16::MAX).zip(source).map(|(_, x)| x).collect();
-        AmbisonicSource {
+        AmbisonicSample {
             data,
             current_frame_len,
             sample_rate,
@@ -66,16 +66,16 @@ impl AmbisonicSource {
 
     pub fn new_size(freq: u32, repeat: bool) -> Self {
         let sample = source::SineWave::new(freq);
-        AmbisonicSource::from_source(sample, repeat)
+        AmbisonicSample::from_source(sample, repeat)
     }
 }
-pub struct AmbisonicController {
+pub struct AmbisonicSource {
     controller: Option<ambisonic::SoundController>,
-    handle: Handle<AmbisonicSource>,
+    handle: Handle<AmbisonicSample>,
 }
-impl AmbisonicController {
-    pub fn new(handle: Handle<AmbisonicSource>) -> Self {
-        AmbisonicController {
+impl AmbisonicSource {
+    pub fn new(handle: Handle<AmbisonicSample>) -> Self {
+        AmbisonicSource {
             controller: None,
             handle,
         }
@@ -99,10 +99,10 @@ pub fn amibsonic_shutdown_system(mut ambisonic_res: NonSendMut<AmbisonicResource
 }
 
 pub fn ambisonic_update_system(
-    sources: Res<Assets<AmbisonicSource>>,
+    sources: Res<Assets<AmbisonicSample>>,
     scene: NonSend<AmbisonicResource>,
     mut query: QuerySet<(
-        Query<(&GlobalTransform, &mut AmbisonicController, Option<&Velocity>)>,
+        Query<(&GlobalTransform, &mut AmbisonicSource, Option<&Velocity>)>,
         Query<&GlobalTransform, With<AmbisonicCenter>>
     )>,
 ) {
@@ -145,7 +145,7 @@ pub fn ambisonic_update_system(
 #[derive(Bundle)]
 pub struct AmbisonicBundle {
     pub transform: Transform,
-    pub controller: AmbisonicController,
+    pub controller: AmbisonicSource,
 }
 
 pub struct AmbisonicCenter;
@@ -153,7 +153,7 @@ pub struct AmbisonicCenter;
 pub struct AmbisonicPlugin;
 impl Plugin for AmbisonicPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_asset::<AmbisonicSource>()
+        app.add_asset::<AmbisonicSample>()
             .insert_non_send_resource(AmbisonicResource::default())
             .add_startup_system(ambisonic_startup_system.system())
             .add_system(ambisonic_update_system.system());

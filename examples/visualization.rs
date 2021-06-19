@@ -6,11 +6,10 @@ struct Marker;
 
 fn startup_system(
     mut commands: Commands,
-    mut sources: ResMut<Assets<bevy_ambisonic::AmbisonicSample>>,
     texture_asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    let handle = sources.add(bevy_ambisonic::AmbisonicSample::new_size(440, true));
+    let handle = texture_asset_server.load("test.wav");
 
     let microphone = commands.spawn()
         .insert(Transform::from_xyz(0.0, 0.0, -1001.0))

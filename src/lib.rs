@@ -1,6 +1,8 @@
+use std::io::Cursor;
 use std::sync::Arc;
 
 use ambisonic::rodio::source;
+use bevy::asset::{AssetLoader, LoadedAsset};
 use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 
@@ -48,7 +50,7 @@ impl Iterator for AmbisonicSample {
     }
 }
 impl AmbisonicSample {
-    pub fn from_source<T: source::Source<Item = f32>>(source: T, repeat: bool) -> Self {
+    pub fn from_source_f32<T: source::Source<Item = f32>>(source: T, repeat: bool) -> Self {
         let current_frame_len = source.current_frame_len();
         let sample_rate = source.sample_rate();
         let total_duration = source.total_duration();
@@ -63,10 +65,27 @@ impl AmbisonicSample {
             current_index,
         }
     }
+    pub fn from_source_i16<T: source::Source<Item = i16>>(source: T, repeat: bool) -> Self {
+        let current_frame_len = source.current_frame_len();
+        let sample_rate = source.sample_rate();
+        let total_duration = source.total_duration();
+        let current_index = 0;
+        let data = (0u16..u16::MAX).zip(source)
+            .map(|(_, x)| (x as f32) / (i16::MAX as f32))
+            .collect();
+        AmbisonicSample {
+            data,
+            current_frame_len,
+            sample_rate,
+            total_duration,
+            repeat,
+            current_index,
+        }
+    }
 
-    pub fn new_size(freq: u32, repeat: bool) -> Self {
+    pub fn new_sine(freq: u32, repeat: bool) -> Self {
         let sample = source::SineWave::new(freq);
-        AmbisonicSample::from_source(sample, repeat)
+        AmbisonicSample::from_source_f32(sample, repeat)
     }
 }
 pub struct AmbisonicSource {
@@ -107,7 +126,7 @@ pub fn ambisonic_update_system(
     )>,
 ) {
     let center = match query.q1().single() {
-        Ok(center) => center.clone(),
+        Ok(center) => *center,
         _ => GlobalTransform::from_xyz(0.0, 0.0, 0.0),
     };
     for (transform, mut controller, velocity) in query.q0_mut().iter_mut() {
@@ -155,9 +174,31 @@ pub struct AmbisonicPlugin;
 impl Plugin for AmbisonicPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_asset::<AmbisonicSample>()
+            .init_asset_loader::<AmbisonicLoader>()
             .insert_non_send_resource(AmbisonicResource::default())
             .add_startup_system(ambisonic_startup_system.system())
             .add_system(ambisonic_update_system.system());
+    }
+}
+
+#[derive(Default)]
+pub struct AmbisonicLoader;
+impl AssetLoader for AmbisonicLoader {
+    fn load<'a>(
+        &'a self,
+        bytes: &'a [u8],
+        load_context: &'a mut bevy::asset::LoadContext,
+    ) -> bevy::asset::BoxedFuture<'a, Result<(), anyhow::Error>> {
+        let reader = Cursor::new(bytes);
+        Box::pin(async move {
+            let sample = ambisonic::rodio::Decoder::new(reader)?;
+            load_context.set_default_asset(LoadedAsset::new(AmbisonicSample::from_source_i16(sample, true)));
+            Ok(())
+        })
+    }
+
+    fn extensions(&self) -> &[&str] {
+        &["mp3", "wav", "ogg", "flac"]
     }
 }
 

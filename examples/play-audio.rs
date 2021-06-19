@@ -5,7 +5,7 @@ fn startup_system(
     mut commands: Commands,
     mut sources: ResMut<Assets<bevy_ambisonic::AmbisonicSample>>,
 ) {
-    let handle = sources.add(bevy_ambisonic::AmbisonicSample::new_size(440, true));
+    let handle = sources.add(bevy_ambisonic::AmbisonicSample::new_sine(440, true));
     commands
         .spawn_bundle(bevy_ambisonic::AmbisonicBundle {
             transform: Transform::from_xyz(-50.0, 0.0, 0.0),

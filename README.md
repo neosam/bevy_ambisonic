@@ -10,7 +10,7 @@ entity which also has a GlobalPosition.
 
 ## Example
 
-``` no_run
+``` rust
 use bevy::prelude::*;
 
 fn startup_system(

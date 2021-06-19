@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use bevy::{prelude::*, render::camera::ScalingMode};
+use bevy::{prelude::*, render::camera::{Camera, ScalingMode}};
 
 struct Marker;
 
@@ -11,10 +11,19 @@ fn startup_system(
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let handle = sources.add(bevy_ambisonic::AmbisonicSample::new_size(440, true));
+
+    let microphone = commands.spawn()
+        .insert(Transform::from_xyz(0.0, 0.0, -1001.0))
+        .insert(GlobalTransform::default())
+        .insert(bevy_ambisonic::AmbisonicCenter)
+        .id();
+
     let mut camera_bundle = OrthographicCameraBundle::new_2d();
     camera_bundle.orthographic_projection.scaling_mode = ScalingMode::FixedHorizontal;
     camera_bundle.orthographic_projection.scale = 2.0;
-    commands.spawn_bundle(camera_bundle);
+    let _camera = commands.spawn_bundle(camera_bundle)
+        .push_children(&[microphone])
+        .id();
 
     let sound = commands
         .spawn_bundle(bevy_ambisonic::AmbisonicBundle {
@@ -40,9 +49,14 @@ fn startup_system(
         .push_children(&[sprite]);
 }
 
-fn update_system(mut query: Query<&mut Transform, With<Marker>>, time: Res<Time>) {
+fn update_sprite(mut query: Query<&mut Transform, With<Marker>>, time: Res<Time>) {
     for mut transform in query.iter_mut() {
         transform.rotate(Quat::from_rotation_z(PI / 8.0 * time.delta_seconds()));
+    }
+}
+fn update_camera(mut query: Query<&mut Transform, With<Camera>>, time: Res<Time>) {
+    if let Ok(mut transform) = query.single_mut() {
+        transform.translation.x = (time.seconds_since_startup().sin() * 1.0) as f32;
     }
 }
 
@@ -51,6 +65,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(bevy_ambisonic::AmbisonicPlugin)
         .add_startup_system(startup_system.system())
-        .add_system(update_system.system())
+        .add_system(update_sprite.system())
+        .add_system(update_camera.system())
         .run();
 }

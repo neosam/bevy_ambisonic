@@ -112,8 +112,9 @@ pub fn ambisonic_update_system(
     };
     for (transform, mut controller, velocity) in query.q0_mut().iter_mut() {
         let matrix = transform.compute_matrix();
-        let final_matrix = matrix * center.compute_matrix();
+        let final_matrix = center.compute_matrix().inverse() * matrix;
         let transform = GlobalTransform::from_matrix(final_matrix);
+        println!("{:?}", transform.translation);
         if let Some(ref mut controller) = controller.controller {
             controller.adjust_position([
                 transform.translation[0],

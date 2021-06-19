@@ -58,6 +58,15 @@ fn update_camera(mut query: Query<&mut Transform, With<Camera>>, time: Res<Time>
         transform.translation.x = (time.seconds_since_startup().sin() * 1.0) as f32;
     }
 }
+fn repeat_sound(mut query: Query<&mut bevy_ambisonic::AmbisonicSource>, time: Res<Time>, mut last_tick: Local<f64>) {
+    let current_time = time.seconds_since_startup();
+    if current_time > *last_tick + 2.0 {
+        for mut source in query.iter_mut() {
+            source.restart();
+        }
+        *last_tick = current_time;
+    }   
+}
 
 fn main() {
     App::build()
@@ -66,5 +75,6 @@ fn main() {
         .add_startup_system(startup_system.system())
         .add_system(update_sprite.system())
         .add_system(update_camera.system())
+        .add_system(repeat_sound.system())
         .run();
 }

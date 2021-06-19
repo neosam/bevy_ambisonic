@@ -99,6 +99,12 @@ impl AmbisonicSource {
             handle,
         }
     }
+    pub fn restart(&mut self) {
+        if let Some(ref controller) = self.controller {
+            controller.stop();
+        }
+        self.controller = None;
+    }
 }
 
 #[derive(Clone)]
@@ -133,7 +139,6 @@ pub fn ambisonic_update_system(
         let matrix = transform.compute_matrix();
         let final_matrix = center.compute_matrix().inverse() * matrix;
         let transform = GlobalTransform::from_matrix(final_matrix);
-        println!("{:?}", transform.translation);
         if let Some(ref mut controller) = controller.controller {
             controller.adjust_position([
                 transform.translation[0],
@@ -192,7 +197,7 @@ impl AssetLoader for AmbisonicLoader {
         let reader = Cursor::new(bytes);
         Box::pin(async move {
             let sample = ambisonic::rodio::Decoder::new(reader)?;
-            load_context.set_default_asset(LoadedAsset::new(AmbisonicSample::from_source_i16(sample, true)));
+            load_context.set_default_asset(LoadedAsset::new(AmbisonicSample::from_source_i16(sample, false)));
             Ok(())
         })
     }
